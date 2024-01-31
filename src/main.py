@@ -2,12 +2,11 @@ import gzip
 import json
 import os
 import sys
-from zipfile import ZipFile
+
+from kotatsu import *
 
 # импорт protobuf-сгенерированных файлов
 import neko_pb2 as neko
-
-from kotatsu import *
 
 
 def neko_to_kotatsu(input_path: str, output_path: str) -> None:
@@ -23,9 +22,9 @@ def neko_to_kotatsu(input_path: str, output_path: str) -> None:
     result_history = []
     result_bookmarks = []
 
-    for id, category in enumerate(backup.backupCategories):
+    for i, category in enumerate(backup.backupCategories):
         result_categories.append(KotatsuCategoryBackup(
-            category_id=id + 1,
+            category_id=i + 1,
             created_at=0,
             sort_key=category.order,
             title=category.name,
@@ -86,10 +85,10 @@ def neko_to_kotatsu(input_path: str, output_path: str) -> None:
                 image_url=kotatsu_manga.cover_url,
                 created_at=0,
                 percent=(checking.lastPageRead / (
-                            checking.lastPageRead + checking.pagesLeft)) if checking.lastPageRead + checking.pagesLeft > 0 else 0.0,
+                        checking.lastPageRead + checking.pagesLeft))
+                if checking.lastPageRead + checking.pagesLeft > 0 else 0.0,
             )
-            for checking in manga.chapters
-            if checking.bookmark
+            for checking in manga.chapters if checking.bookmark
         ]
 
         if bookmarks:
@@ -133,10 +132,11 @@ def neko_to_kotatsu(input_path: str, output_path: str) -> None:
         ("bookmarks", json.dumps([entry.to_dict() for entry in result_bookmarks], indent=2)),
     ]:
         if entry.strip() != "[]":
-            with open(f"{output_path}_{name}.json", 'w') as f:
+            with open(f"{output_path}/{name}.json", 'w') as f:
                 f.write(entry)
 
-    print(f"Conversion completed successfully, output: {output_path}")
+    print(f"Conversion completed successfully.\nCheck it in '{output_path}'")
+
 
 def main() -> None:
     args = sys.argv
@@ -152,15 +152,14 @@ def main() -> None:
         return
 
     input_path = args[1]
-    output_path = args[2] if len(args) > 2 else input_path.split(".")[0]
-    output_path = os.path.splitext(output_path)[0]  # Удаляем расширение
+    output_path = (args[2] if len(args) > 2 else ".".join(input_path.split(".")[:-1])) + "/"
 
     if os.path.exists(output_path):
         overwrite = input(f"File with name {output_path} already exists; overwrite? Y(es)/N(o): ").strip().lower()
         if overwrite not in {"y", "yes"}:
             print("Conversion cancelled")
             return
-
+    os.mkdir(output_path)
     neko_to_kotatsu(input_path, output_path)
 
 
