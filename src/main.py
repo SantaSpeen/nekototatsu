@@ -215,7 +215,7 @@ def kotatsu_to_neko(input_path: str, output_path: str) -> None:
 def main() -> None:
     args = sys.argv
     if len(args) < 2:
-        print(f"Usage: {args[0]} (input neko.tachibk) (optional output name)")
+        print(f"Usage: {args[0]} (FILE) [output prefix]")
         return
 
     reverse = "-r" in args or "--reverse" in args
