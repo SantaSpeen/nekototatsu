@@ -1,0 +1,13 @@
+# pip install pyinstaller-versionfile
+# create-version-file metadata.yml --outfile version.txt
+Version: 1.0.0
+CompanyName: none
+FileDescription: Convert Neko to Kotatsu
+InternalName: nekototatsu
+LegalCopyright: © SantaSpeen
+OriginalFilename: nekototatsu.exe
+ProductName: nekototatsu
+Translation:
+  # en-US
+  - langID: 1033
+    charsetID: 1251
