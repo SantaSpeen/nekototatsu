@@ -8,7 +8,7 @@ Copied (not fully) from https://github.com/PhantomShift/nekotatsu but on python 
 ## Usage
 
 From blobs:\
-Just move your `neko.tachibk` file to an exe file
+Just move your `neko.tachibk` file to an exe file ([download](https://github.com/SantaSpeen/nekototatsu/releases/download/v1.0/nekototatsu.exe))
 
 ![prew.gif](prew.gif)
 
