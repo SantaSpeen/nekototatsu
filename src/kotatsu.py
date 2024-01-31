@@ -145,9 +145,9 @@ class KotatsuBookmarkBackup:
 
 
 def get_kotatsu_id(source_name: str, url: str) -> int:
-    id = 1125899906842597
+    i = 1125899906842597
     for c in source_name:
-        id = (31 * id + ord(c)) & ((1 << 63) - 1)
+        i = (31 * i + ord(c)) & ((1 << 63) - 1)
     for c in url:
-        id = (31 * id + ord(c)) & ((1 << 63) - 1)
-    return id
+        i = (31 * i + ord(c)) & ((1 << 63) - 1)
+    return i

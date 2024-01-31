@@ -1,7 +1,9 @@
 import gzip
 import json
 import os
+import shutil
 import sys
+import zipfile
 
 from kotatsu import *
 
@@ -9,9 +11,14 @@ from kotatsu import *
 import neko_pb2 as neko
 
 
-def neko_to_kotatsu(input_path: str, output_path: str) -> None:
-    with gzip.GzipFile(input_path, 'rb') as f:
-        neko_read = f.read()
+def neko_to_kotatsu(input_path: str, output_path: str):
+    try:
+        print(f"[I] Loading file: {input_path}")
+        with gzip.GzipFile(input_path, 'rb') as f:
+            neko_read = f.read()
+    except gzip.BadGzipFile:
+        print(f"[E] Bad file: {input_path}")
+        return
 
     # Заменяем prost.decode на protobuf
     backup = neko.Backup()
@@ -21,6 +28,8 @@ def neko_to_kotatsu(input_path: str, output_path: str) -> None:
     result_favourites = []
     result_history = []
     result_bookmarks = []
+
+    manga_counter = 0
 
     for i, category in enumerate(backup.backupCategories):
         result_categories.append(KotatsuCategoryBackup(
@@ -35,6 +44,7 @@ def neko_to_kotatsu(input_path: str, output_path: str) -> None:
         ))
 
     for manga in backup.backupManga:
+        manga_counter += 1
         manga_url = manga.url.replace("/manga/", "")
         kotatsu_manga = KotatsuMangaBackup(
             id=get_kotatsu_id("MANGADEX", manga_url),
@@ -44,7 +54,7 @@ def neko_to_kotatsu(input_path: str, output_path: str) -> None:
             public_url=f"https://mangadex.org/title/{manga_url}",
             rating=-1.0,
             nsfw=False,
-            cover_url=f"{manga.thumbnailUrl}.256.jpg",
+            cover_url=f"{manga.thumbnailUrl}",
             large_cover_url=manga.thumbnailUrl,
             author=manga.author,
             state={
@@ -102,9 +112,6 @@ def neko_to_kotatsu(input_path: str, output_path: str) -> None:
 
         last_read = max((entry.lastRead for entry in manga.history), default=manga.lastUpdate)
 
-        if last_read != 0:
-            print(kotatsu_manga.id)
-
         kotatsu_history = KotatsuHistoryBackup(
             manga_id=kotatsu_manga.id,
             created_at=manga.dateAdded,
@@ -124,21 +131,35 @@ def neko_to_kotatsu(input_path: str, output_path: str) -> None:
 
         result_history.append(kotatsu_history)
 
-    output_path = os.path.splitext(output_path)[0]  # Удаляем расширение .zip
+    tmp = "_tmp"
+    if os.path.exists(tmp):
+        shutil.rmtree(tmp)
+    os.mkdir(tmp)
+    filenames = []
     for name, entry in [
-        ("history", json.dumps([entry.to_dict() for entry in result_history], indent=2)),
-        ("categories", json.dumps([entry.to_dict() for entry in result_categories], indent=2)),
-        ("favourites", json.dumps([entry.to_dict() for entry in result_favourites], indent=2)),
-        ("bookmarks", json.dumps([entry.to_dict() for entry in result_bookmarks], indent=2)),
+        ("history", [entry.to_dict() for entry in result_history]),
+        ("categories", [entry.to_dict() for entry in result_categories]),
+        ("favourites", [entry.to_dict() for entry in result_favourites]),
+        ("bookmarks", [entry.to_dict() for entry in result_bookmarks]),
     ]:
-        if entry.strip() != "[]":
-            with open(f"{output_path}/{name}.json", 'w') as f:
-                f.write(entry)
+        if entry:
+            with open(f"{tmp}/{name}", 'w') as f:
+                j = json.dumps(entry)
+                f.write(j)
+                filenames.append([f"{tmp}/{name}", name])
 
-    print(f"Conversion completed successfully.\nCheck it in '{output_path}'")
+    print(f"[I] Loaded mangas: {manga_counter}")
+
+    with zipfile.ZipFile(f"kotasu_{output_path}.bk.zip", mode="w") as archive:
+        for filename, name in filenames:
+            archive.write(filename, name)
+            print(f"[I] {filename} - added")
+    shutil.rmtree(tmp)
+
+    print(f"Conversion completed successfully\nCheck it in: 'kotasu_{output_path}.bk.zip'")
 
 
-def main() -> None:
+def main():
     args = sys.argv
 
     if "-h" in args or "--help" in args:
@@ -152,15 +173,17 @@ def main() -> None:
         return
 
     input_path = args[1]
-    output_path = (args[2] if len(args) > 2 else ".".join(input_path.split(".")[:-1])) + "/"
+    output_path = args[2] if len(args) > 2 else os.path.basename(".".join(input_path.split(".")[:-1]))
 
-    if os.path.exists(output_path):
-        overwrite = input(f"File with name {output_path} already exists; overwrite? Y(es)/N(o): ").strip().lower()
+    if os.path.exists(f"kotasu_{output_path}.bk.zip"):
+        overwrite = input(f"[I] File with name 'kotasu_{output_path}.bk.zip' already exists\nOverwrite? Y(es)/N(o): ").strip().lower()
         if overwrite not in {"y", "yes"}:
             print("Conversion cancelled")
             return
-    os.mkdir(output_path)
+        os.remove(f"kotasu_{output_path}.bk.zip")
+
     neko_to_kotatsu(input_path, output_path)
+    input("\nPress enter to exit...")
 
 
 if __name__ == "__main__":
