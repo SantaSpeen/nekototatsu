@@ -9,7 +9,7 @@ Copied (not fully) from [nekotatsu](https://github.com/PhantomShift/nekotatsu), 
 
 ## Usage
 
-From blobs ([download](https://github.com/SantaSpeen/nekototatsu/releases/download/v1.0/nekototatsu.exe)):\
+From blobs ([download](https://github.com/SantaSpeen/nekototatsu/releases/download/v1.0/nekototatsu-1.0.1.exe)):\
 Just move your `tachibk` file to an exe file
 
 ![prew.gif](prew.gif)
